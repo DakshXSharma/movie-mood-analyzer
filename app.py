@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Optional, Tuple
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 import database as db
@@ -12,7 +13,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 # Initialize database tables on startup
 db.init_db()
 
-def get_auth_user() -> tuple[int | None, dict | None]:
+def get_auth_user() -> Tuple[Optional[int], Optional[dict]]:
     """
     Extracts current authenticated user from 'Authorization: Bearer <token>' header.
     Returns (user_id, user_dict). If unauthenticated, returns (None, None).

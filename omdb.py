@@ -1,7 +1,6 @@
 import os
 import random
 import requests
-import numpy as np
 from typing import Dict, List, Set, Tuple, Any, Optional
 
 # OMDB base URL

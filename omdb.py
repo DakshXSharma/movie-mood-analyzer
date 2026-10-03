@@ -307,35 +307,34 @@ def score_and_rank_recommendations(movies: List[Dict[str, Any]], mood: str, watc
                 g_score += watched_genre_counts.get(g, 0)
         genre_matches.append(g_score)
         
-    # Convert to NumPy arrays for vector calculations
-    ratings_arr = np.array(ratings, dtype=float)
-    years_arr = np.array(years, dtype=float)
-    genre_arr = np.array(genre_matches, dtype=float)
-    
+    # ── Pure-Python scoring (no numpy required) ──────────────────────────
+
     # Normalize ratings to [0, 1]
-    norm_ratings = ratings_arr / 10.0
-    
-    # Normalize years to [0, 1] (clip between 1970 and 2026)
-    norm_years = np.clip((years_arr - 1970) / (2026 - 1970), 0.0, 1.0)
-    
+    norm_ratings = [r / 10.0 for r in ratings]
+
+    # Normalize years to [0, 1] (clamp between 1970 and 2026)
+    norm_years = [max(0.0, min(1.0, (y - 1970) / (2026 - 1970))) for y in years]
+
     # Normalize genre match counts to [0, 1]
-    max_genre_match = np.max(genre_arr) if len(genre_arr) > 0 else 0
-    if max_genre_match > 0:
-        norm_genres = genre_arr / max_genre_match
+    max_genre = max(genre_matches) if genre_matches else 0
+    if max_genre > 0:
+        norm_genres = [g / max_genre for g in genre_matches]
     else:
-        norm_genres = np.zeros_like(genre_arr)
-        
-    # Calculate weighted score:
-    # 40% rating, 20% release year, 40% genre match
-    scores = 0.4 * norm_ratings + 0.2 * norm_years + 0.4 * norm_genres
-    
-    # Sort indices in descending order
-    ranked_indices = np.argsort(scores)[::-1]
-    
+        norm_genres = [0.0] * len(genre_matches)
+
+    # Weighted score: 40% rating, 20% year recency, 40% genre match
+    scores = [
+        0.4 * norm_ratings[i] + 0.2 * norm_years[i] + 0.4 * norm_genres[i]
+        for i in range(len(movies))
+    ]
+
+    # Sort indices descending by score
+    ranked_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+
     ranked_movies = []
     for idx in ranked_indices:
-        movie = movies[int(idx)].copy()
-        movie['score'] = float(scores[int(idx)])
+        movie = movies[idx].copy()
+        movie['score'] = round(scores[idx], 4)
         ranked_movies.append(movie)
-        
+
     return ranked_movies
